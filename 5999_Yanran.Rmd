@@ -4,6 +4,15 @@ author: "Yanran Wei"
 date: "3/9/2021"
 output: html_document
 ---
+
+```{r}
+# Load packages
+library(xts)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+```
+
 # data cleaning
 ```{r}
 # Load data, summary, boxplot
@@ -20,15 +29,9 @@ soil <- na.omit(soil)
 soil
 ```
 
-```{r}
-# Split the data
-soil_s <- split(soil, soil$soil.Region)
-soil_s
-soil_Al <- soil_s$Alberta
-soil_Al
-```
 
 ```{r}
+# change data type
 soil$soil.End.Date <- as.Date(soil$soil.End.Date)
 soil$soil.Region <- as.character(soil$soil.Region)
 soil$soil.Value <- as.numeric(as.character(soil$soil.Value))
@@ -37,16 +40,88 @@ soil
 ```
 
 ```{r}
-library(xts)
-library(dplyr)
-library(lubridate)
-soil_Al %>%
+# Change to monthly avg
+soil1 <- subset(soil, select=c(soil.Region, soil.End.Date, soil.Value))
+soil1 <- soil1 %>%
   mutate(year = year(soil.End.Date), 
          monthnum = month(soil.End.Date),
          month = month(soil.End.Date, label=T)) %>%
-  group_by(year, month) %>%
+  group_by(soil.Region, year, month) %>%
   arrange(year, monthnum) %>%
   select(-monthnum) %>%
   summarise(soil.Value = mean(soil.Value))
+soil1$Date <- with(soil1, sprintf("%d-%02d", year, month))
+soil1 <- subset(soil1, select = -c(year,month) )
+colnames(soil1)[1] <- "Region"
+colnames(soil1)[2] <- "Value"
+soil1
+```
+
+```{r}
+# Split the data
+soil_s <- split(soil1, soil1Region)
+```
+
+```{r}
+ggplot(data = soil_s$Alberta, aes(x = Date, y = Value)) +
+  geom_bar(stat = "identity", fill = "purple") +
+  labs(x = "Date",
+    y = "Soil Moisture",
+    title = "Soil Moisture Data for Alberta")
+```
+
+# Temp
+```{r}
+# Load data, summary, boxplot
+tempdata <- read.csv("temp.csv")
+tempdata
+```
+
+```{r}
+# Redefine the dataframe
+temp <- tempdata
+temp = data.frame(temp$Region,temp$End.Date,temp$Value)
+temp <- na.omit(temp)
+temp
+```
+
+```{r}
+# change data type
+temp$temp.End.Date <- as.Date(temp$temp.End.Date)
+temp$temp.Region <- as.character(temp$temp.Region)
+temp$temp.Value <- as.numeric(as.character(temp$temp.Value))
+temp <- na.omit(temp)
+temp
+```
+
+```{r}
+# Change to monthly avg
+temp1 <- subset(temp, select=c(temp.Region, temp.End.Date, temp.Value))
+temp1 <- temp1 %>%
+  mutate(year = year(temp.End.Date), 
+         monthnum = month(temp.End.Date),
+         month = month(temp.End.Date, label=T)) %>%
+  group_by(temp.Region, year, month) %>%
+  arrange(year, monthnum) %>%
+  select(-monthnum) %>%
+  summarise(temp.Value = mean(temp.Value))
+temp1$Date <- with(temp1, sprintf("%d-%02d", year, month))
+temp1 <- subset(temp1, select = -c(year,month) )
+colnames(temp1)[1] <- "Region"
+colnames(temp1)[2] <- "Value"
+temp1
+```
+
+```{r}
+# Split the data
+temp_s <- split(temp1, temp1$Region)
+```
+
+```{r}
+ggplot(data = temp_s$Alberta, aes(x = Date, y = Value)) +
+  geom_bar(stat = "identity", fill = "purple") +
+  labs(x = "Date",
+    y = "Temperaturee",
+    title = "Temperature Data for Alberta")
 ```
 
